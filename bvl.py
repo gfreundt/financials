@@ -106,5 +106,5 @@ codes = codes(raw)
 prices = prices(raw, codes)
 final = combine(prices)
 
-send_gmail('jlcastanedaherrera@gmail.com', 'Cierre BVL del ' + dt.strftime(dt.now(), '%Y.%m.%d'), 'Abrirlo como CSV con delimitador |', active.BVL_FILE)
-#send_gmail('gfreundt@losportales.com.pe', 'Cierre BVL del ' + dt.strftime(dt.now(), '%Y.%m.%d'), 'Abrirlo como CSV.', active.BVL_FILE)
+send_gmail('jcastaneda@gmail.com', 'Cierre BVL del ' + dt.strftime(dt.now(), '%Y.%m.%d'), 'Abrirlo como CSV.', active.BVL_FILE)
+send_gmail('gfreundt@losportales.com.pe', 'Cierre BVL del ' + dt.strftime(dt.now(), '%Y.%m.%d'), 'Abrirlo como CSV.', active.BVL_FILE)
