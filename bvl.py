@@ -11,7 +11,7 @@ class Basics:
 		if not base_path:
 			print("PATH NOT FOUND")
 			quit()
-		data_path = os.path.join(base_path[:2],'Coding','bvl')
+		data_path = os.path.join(base_path[:3],'Coding','bvl')
 		self.CHROMEDRIVER = os.path.join(base_path, 'chromedriver.exe')
 		self.BVL_FILE = os.path.join(data_path, 'bvl.csv')
 		self.HTML_PATH = os.path.join(data_path, 'html')
