@@ -11,10 +11,10 @@ class Basics:
 		if not base_path:
 			print("PATH NOT FOUND")
 			quit()
-		data_path = os.path.join('sharedData', 'data')
+		data_path = os.path.join(base_path[:2],'Coding','bvl')
 		self.CHROMEDRIVER = os.path.join(base_path, 'chromedriver.exe')
-		self.BVL_FILE = os.path.join(base_path, data_path, 'bvl.csv')
-		self.HTML_PATH = os.path.join(base_path, data_path, 'html')
+		self.BVL_FILE = os.path.join(data_path, 'bvl.csv')
+		self.HTML_PATH = os.path.join(data_path, 'html')
 		self.EXTRACT_FILE = os.path.join(self.HTML_PATH, r'www.bvl.com.pe\mercado\movimientos-diarios.html')
 
 	def find_path(self):
