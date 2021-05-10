@@ -12,6 +12,7 @@ class Basics:
 			print("PATH NOT FOUND")
 			quit()
 		data_path = os.path.join(base_path[:3],'Coding','bvl')
+		self.SCRAPER_PATH = os.path.join(data_path,'bvl_scrape.bat')
 		self.CHROMEDRIVER = os.path.join(base_path, 'chromedriver.exe')
 		self.BVL_FILE = os.path.join(data_path, 'bvl.csv')
 		self.HTML_PATH = os.path.join(data_path, 'html')
@@ -28,7 +29,7 @@ def get_source(url):
 	#Get Full HTML
 	#cmd = '''d:\"program files\winhttrack\httrack.exe" https://www.bvl.com.pe/mercado/movimientos-diarios -O "D:\Google Drive Backup\Multi-Sync\sharedData\data\html" --quiet'''
 	#subprocess.call(cmd)
-	subprocess.call(os.path.join(data_path,'bvl_scrape.bat'))
+	subprocess.call(active.SCRAPER_PATH)
 	with open(active.EXTRACT_FILE, 'r') as file:
 		return file.read()
 
