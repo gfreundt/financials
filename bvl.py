@@ -28,7 +28,7 @@ def get_source(url):
 	#Get Full HTML
 	#cmd = '''d:\"program files\winhttrack\httrack.exe" https://www.bvl.com.pe/mercado/movimientos-diarios -O "D:\Google Drive Backup\Multi-Sync\sharedData\data\html" --quiet'''
 	#subprocess.call(cmd)
-	subprocess.call('bvl_scrape.bat')
+	subprocess.call(os.path.join(data_path,'bvl_scrape.bat'))
 	with open(active.EXTRACT_FILE, 'r') as file:
 		return file.read()
 
