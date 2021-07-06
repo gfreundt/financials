@@ -1,39 +1,15 @@
-import yagmail
+import ezgmail
 from datetime import datetime as dt
 import csv
-import os
 import subprocess
 
 
-class Basics:
-	def __init__(self):
-		base_path = self.find_path()
-		if not base_path:
-			print("PATH NOT FOUND")
-			quit()
-		data_path = os.path.join(base_path[:3],'Coding','bvl')
-		self.SCRAPER_PATH = os.path.join(data_path,'bvl_scrape.bat')
-		self.CHROMEDRIVER = os.path.join(base_path, 'chromedriver.exe')
-		self.BVL_FILE = os.path.join(data_path, 'bvl.csv')
-		self.HTML_PATH = os.path.join(data_path, 'html')
-		self.EXTRACT_FILE = os.path.join(self.HTML_PATH, r'www.bvl.com.pe\mercado\movimientos-diarios.html')
-
-	def find_path(self):
-	    paths = (r'C:\Users\Gabriel Freundt\Google Drive\Multi-Sync',r'D:\Google Drive Backup\Multi-Sync', r'C:\users\gfreu\Google Drive\Multi-Sync')
-	    for path in paths:
-	        if os.path.exists(path):
-	            return path
-
-
-def get_source(url):
-	#Get Full HTML
-	#cmd = '''d:\"program files\winhttrack\httrack.exe" https://www.bvl.com.pe/mercado/movimientos-diarios -O "D:\Google Drive Backup\Multi-Sync\sharedData\data\html" --quiet'''
-	#subprocess.call(cmd)
-	subprocess.call(active.SCRAPER_PATH)
-	with open(active.EXTRACT_FILE, 'r') as file:
+def httrack(url):
+	subprocess.run('httrack --update --skeleton --display -O "/home/gabriel/pythonCode/bvl/webdata" ' + url, shell=True)
+	with open('/home/gabriel/pythonCode/bvl/webdata/www.bvl.com.pe/mercado/agentes/listado.html', mode='r') as file:
 		return file.read()
 
-	
+
 def get_string(raw, idx):
 	r = ''
 	while True:
@@ -68,9 +44,9 @@ def prices(raw, codes):
 
 def combine(prices):
 	final = []
-	with open(active.BVL_FILE, mode='r') as file:
+	with open(BVL_FILE, mode='r') as file:
 		content = [i for i in csv.reader(file, delimiter=",")]
-	# upodate all current codes with new information (if it exists) or copy current one
+	# update all current codes with new information (if it exists) or copy current one
 	for code in content[1:]:
 		appending = [i for i in prices if i[0] == code[0]]
 		if not appending:
@@ -83,29 +59,24 @@ def combine(prices):
 		if code not in final:
 			final.append(code)
 	# rewrite file
-	with open(active.BVL_FILE, mode='w', newline="") as file:
+	with open(BVL_FILE, mode='w', newline="") as file:
 		w = csv.writer(file, delimiter=",")
-		w.writerow(['Nemónico', 'Última', 'Fecha'])
 		for line in sorted(final, key=lambda i:i[0]):
 			w.writerow(line)
 
 
-def send_gmail(to, subject, text_content, attach):
-	user = 'gfreundt@gmail.com'
-	app_password = 'brwd tjfk tpuo gimo'
-	content = [text_content, attach]
-
-	with yagmail.SMTP(user, app_password) as yag:
-	    yag.send(to, subject, content)
+def send_gmail(to_list, subject, body, attach):
+	for to in to_list:
+		ezgmail.send(to, subject, body, [attach])
 
 
 
 # Main
-active = Basics()
-raw = get_source('https://www.bvl.com.pe/mercado/movimientos-diarios')
+BVL_FILE = '/home/gabriel/pythonCode/bvl/bvl_data.csv'
+raw = httrack('https://www.bvl.com.pe/mercado/movimientos-diarios')
 codes = codes(raw)
 prices = prices(raw, codes)
 final = combine(prices)
 
-send_gmail('jcastaneda@losportales.com.pe', 'Cierre BVL del ' + dt.strftime(dt.now(), '%Y.%m.%d'), 'Abrirlo como CSV.', active.BVL_FILE)
-send_gmail('gfreundt@losportales.com.pe', 'Cierre BVL del ' + dt.strftime(dt.now(), '%Y.%m.%d'), 'Abrirlo como CSV.', active.BVL_FILE)
+to_list = ['gfreundt@losportales.com.pe', 'jlcastanedaherrera@gmail.com']
+send_gmail(to_list, 'Cierre BVL del ' + dt.strftime(dt.now(), '%Y.%m.%d'), 'Abrirlo como CSV. No tiene fila de titulos.', BVL_FILE)
