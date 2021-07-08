@@ -1,12 +1,21 @@
 import ezgmail
 from datetime import datetime as dt
-import csv
+import csv, os
 import subprocess
+import platform
 
 
-def httrack(url):
+def get_system():
+	node = platform.node()
+	if 'raspberrypi' in node:
+		return '/home/pi/pythonCode/bvl'
+	else:
+		return '/home/gabriel/pythonCode/bvl'
+
+
+def httrack(url, dir):
 	subprocess.run('httrack --update --skeleton --display -O "/home/gabriel/pythonCode/bvl/webdata" ' + url, shell=True)
-	with open('/home/gabriel/pythonCode/bvl/webdata/www.bvl.com.pe/mercado/agentes/listado.html', mode='r') as file:
+	with open(os.path.join(dir, 'webdata', 'www.bvl.com.pe', 'mercado', 'agentes', 'listado.html'), mode='r') as file:
 		return file.read()
 
 
@@ -25,11 +34,12 @@ def codes(raw):
 	idx = 0
 	extract=[]
 	while True:
-		nidx = raw.find('</dt></dl><dl><dt>', idx) + 18
-		if nidx == 17:
+		nidx = raw.find('<dl><dt>', idx) + 8
+		if nidx == 7:
 			return sorted(extract)
 		e = get_string(raw, nidx)
-		extract.append(e)
+		if not ([i for i in e if i.islower()]):
+			extract.append(e)
 		idx = int(nidx)
 
 
@@ -72,11 +82,14 @@ def send_gmail(to_list, subject, body, attach):
 
 
 # Main
-BVL_FILE = '/home/gabriel/pythonCode/bvl/bvl_data.csv'
-raw = httrack('https://www.bvl.com.pe/mercado/movimientos-diarios')
+base_dir = get_system()
+os.chdir(base_dir)
+BVL_FILE = os.path.join(base_dir, 'bvl_data.csv')
+raw = httrack('https://www.bvl.com.pe/mercado/movimientos-diarios', base_dir)
+
 codes = codes(raw)
 prices = prices(raw, codes)
 final = combine(prices)
 
-to_list = ['gfreundt@losportales.com.pe', 'jlcastanedaherrera@gmail.com']
+to_list = ['gfreundt@losportales.com.pe']  #, 'jlcastanedaherrera@gmail.com']
 send_gmail(to_list, 'Cierre BVL del ' + dt.strftime(dt.now(), '%Y.%m.%d'), 'Abrirlo como CSV. No tiene fila de titulos.', BVL_FILE)
