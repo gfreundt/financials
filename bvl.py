@@ -94,5 +94,5 @@ codes = codes(raw)
 prices = prices(raw, codes)
 final = combine(prices)
 
-to_list = ['gfreundt@losportales.com.pe']  #, 'jlcastanedaherrera@gmail.com']
+to_list = ['gfreundt@losportales.com.pe', 'jlcastanedaherrera@gmail.com']
 send_gmail(to_list, 'Cierre BVL del ' + dt.strftime(dt.now(), '%Y.%m.%d'), 'Abrirlo como CSV. No tiene fila de titulos.', BVL_FILE)
