@@ -14,7 +14,9 @@ def get_system():
 
 
 def httrack(url, dir):
-	subprocess.run('httrack --update --skeleton --display -O' + os.path.join(dir, 'webdata') + ' ' + url, shell=True)
+	os.chdir(os.path.join(dir, 'webdata'))
+	subprocess.run('httrack --update --skeleton --display ' + url, shell=True)
+	os.chdir(os.path.join(dir))
 	with open(os.path.join(dir, 'webdata', 'www.bvl.com.pe', 'mercado', 'agentes', 'listado.html'), mode='r') as file:
 		return file.read()
 
