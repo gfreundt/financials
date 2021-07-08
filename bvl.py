@@ -14,7 +14,7 @@ def get_system():
 
 
 def httrack(url, dir):
-	subprocess.run('httrack --update --skeleton --display -O "/home/gabriel/pythonCode/bvl/webdata" ' + url, shell=True)
+	subprocess.run('httrack --update --skeleton --display -O' + os.path.join(dir, 'webdata') + ' ' + url, shell=True)
 	with open(os.path.join(dir, 'webdata', 'www.bvl.com.pe', 'mercado', 'agentes', 'listado.html'), mode='r') as file:
 		return file.read()
 
@@ -83,6 +83,7 @@ def send_gmail(to_list, subject, body, attach):
 
 # Main
 base_dir = get_system()
+print(base_dir)
 os.chdir(base_dir)
 BVL_FILE = os.path.join(base_dir, 'bvl_data.csv')
 raw = httrack('https://www.bvl.com.pe/mercado/movimientos-diarios', base_dir)
