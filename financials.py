@@ -16,9 +16,10 @@ def get_system():
 
 
 def httrack(url):
-	os.chdir(os.path.join(dir, 'webdata'))
+	os.chdir('webdata')
 	subprocess.run('httrack --update --skeleton --display ' + url, shell=True)
-	with open(os.path.join(dir, 'webdata', 'www.bvl.com.pe', 'mercado', 'agentes', 'listado.html'), mode='r') as file:
+	os.chdir('..')
+	with open(os.path.join('webdata', 'www.bvl.com.pe', 'mercado', 'agentes', 'listado.html'), mode='r') as file:
 		return file.read()
 
 
@@ -79,11 +80,13 @@ def combine(prices):
 
 
 def select_data(data, selected):
-    result = []
-    for field in selected:
-        #print(f'Key: {field} - Value: {data[field]}')
-        result.append(data[field])
-    return result
+	result = []
+	for field in selected:
+		if field in data.keys():
+			result.append(data[field])
+		else:
+			result.append(' ')
+	return result
 
 
 def write_file(headers, data):
@@ -103,13 +106,13 @@ def write_file(headers, data):
 
 def send_gmail(to_list, subject, body, attach):
 	for to in to_list:
-		ezgmail.send(to, subject, body, [attach])
+		ezgmail.send(to, subject, body, attach)
 
 
 
 # Common definitions
 os.chdir(get_system())
-send_to_list = ['gfreundt@losportales.com.pe'] #, 'jlcastanedaherrera@gmail.com']
+send_to_list = ['gfreundt@losportales.com.pe', 'jlcastanedaherrera@gmail.com']
 
 # Yahoo Finance
 YF_FILE = 'yf_tickers.xlsx'
@@ -126,11 +129,12 @@ for ticker in tickers:
     compose.append(select_data(t.info, fields_to_extract))
 write_file(headers=fields_to_extract, data=compose)
 
+
 # Bolsa de Valores de Lima
 BVL_FILE = 'bvl_data.csv'
-url = httrack('https://www.bvl.com.pe/mercado/movimientos-diarios')
-codes = codes(url)
-prices = prices(url, codes)
+raw = httrack('https://www.bvl.com.pe/mercado/movimientos-diarios')
+codes = codes(raw)
+prices = prices(raw, codes)
 final = combine(prices)
 
 # Cerrar mandando mail con attachments
