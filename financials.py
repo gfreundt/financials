@@ -1,10 +1,12 @@
+from email.mime import text
 import ezgmail
 from datetime import datetime as dt
-import csv, os
+import csv, os, sys
 import subprocess
 import platform
 import yfinance as yf
 from openpyxl import Workbook
+from tqdm import tqdm
 
 
 def get_system():
@@ -15,127 +17,153 @@ def get_system():
 		return '/home/gabriel/pythonCode/financials'
 
 
-def httrack(url):
-	os.chdir('webdata')
-	subprocess.run('httrack --update --skeleton --display ' + url, shell=True)
-	os.chdir('..')
-	with open(os.path.join('webdata', 'www.bvl.com.pe', 'mercado', 'agentes', 'listado.html'), mode='r') as file:
-		return file.read()
+class YahooFinance:
+
+	def __init__(self):
+		self.FILE_NAME = 'yf_tickers.xlsx'
+		self.TICKERS, self.FIELDS = self.load_parameters()
+		self.TITLE = 'YF Tickers'
+		self.DESCRIPTION = 'Yahoo Finance General Information for Specific Tickers and Fields'
+		
+	def load_parameters(self):
+		with open('yf_t.txt', mode='r') as file:
+			tickers = [i.strip() for i in file.readlines()]
+		with open('yf_fields.txt', mode='r') as file:
+			fields = [i.strip() for i in file.readlines()]
+		return tickers, fields
+
+	def main(self):
+		compose = []
+		for ticker in tqdm(self.TICKERS, desc='Downloading YahooFinance Tickers'):
+			t = yf.Ticker(ticker)
+    		# get stock info
+			compose.append(self.select_data(t.info, self.FIELDS))
+		write_xlsx(headers=self.FIELDS, data=compose, title=self.TITLE, filename=self.FILE_NAME)
+
+	def select_data(self, data, selected):
+		result = []
+		for field in selected:
+			if field in data.keys():
+				result.append(data[field])
+			else:
+				result.append(' ')
+		return result
 
 
-def get_string(raw, idx):
-	r = ''
-	while True:
-		s = raw[idx:idx+1]
-		if s=="<":
-			return r.strip()
-		else:
-			r += s
-			idx += 1
+class Bvl:
+
+	def __init__(self):
+		self.FILE_NAME = 'bvl_cierre.xlsx'
+		self.URL = 'https://www.bvl.com.pe/mercado/movimientos-diarios'
+		self.FIELDS = ['symbol', 'price', 'date']
+		self.TITLE = 'Cierre BVL'
+		self.DESCRIPTION = 'Cierre de precios de acciones BVL día anterior'
+
+	def main(self):
+		raw = self.httrack(self.URL)
+		prices = self.get_prices(raw)
+		final = self.mix_and_match(prices)
+		write_xlsx(headers=self.FIELDS, data=final, title=self.TITLE, filename=self.FILE_NAME)
+
+	def httrack(self, url):
+		os.chdir('webdata')
+		subprocess.run('httrack --update --skeleton --display ' + url, shell=True)
+		os.chdir('..')
+		with open(os.path.join('webdata', 'www.bvl.com.pe', 'mercado', 'agentes', 'listado.html'), mode='r') as file:
+			return file.read()
+
+	def get_prices(self, raw):
+		codes = self.get_codes(raw)
+		extract=[]
+		for code in codes:
+			nidx = raw.find(">"+code+"<") + len(code) + 12
+			e = self.get_string(raw, nidx).replace(',','')
+			extract.append(float(e))
+		return list(zip(codes, extract, [dt.strftime(dt.now(),'%d-%m-%Y')]*len(codes)))
+
+	def get_codes(self, raw):
+		idx = 0
+		extract=[]
+		while True:
+			nidx = raw.find('<dl><dt>', idx) + 8
+			if nidx == 7:
+				return sorted(extract)
+			e = self.get_string(raw, nidx)
+			if not ([i for i in e if i.islower()]):
+				extract.append(e)
+			idx = int(nidx)
+
+	def get_string(self, raw, idx):
+		r = ''
+		while True:
+			s = raw[idx:idx+1]
+			if s=="<":
+				return r.strip()
+			else:
+				r += s
+				idx += 1
+	
+	def mix_and_match(self, prices):
+		final = []
+		with open('bvl_latest_temp.csv', mode='r', encoding= 'utf-8') as file:
+			content = [i for i in csv.reader(file, delimiter=",")]
+		# update all current codes with new information (if it exists) or copy current one
+		for code in content[1:]:
+			appending = [i for i in prices if i[0] == code[0]]
+			if not appending:
+				to_append = code[:]
+			else:
+				to_append = appending[0]
+			final.append(to_append)
+		# add new codes from new information not in current codes
+		for code in prices:
+			if code not in final:
+				final.append(code)
+		# rewrite latest file (for next time)
+		with open('bvl_latest_temp.csv', mode='w', encoding='utf-8') as file:
+			w = csv.writer(file, delimiter=",")
+			for line in sorted(final, key=lambda i:i[0]):
+				w.writerow(line)
+		return final
 
 
-def codes(raw):
-	idx = 0
-	extract=[]
-	while True:
-		nidx = raw.find('<dl><dt>', idx) + 8
-		if nidx == 7:
-			return sorted(extract)
-		e = get_string(raw, nidx)
-		if not ([i for i in e if i.islower()]):
-			extract.append(e)
-		idx = int(nidx)
-
-
-def prices(raw, codes):
-	extract=[]
-	for code in codes:
-		nidx = raw.find(">"+code+"<") + len(code) + 12
-		e = get_string(raw, nidx).replace(',','')
-		extract.append(float(e))
-	return list(zip(codes, extract, [dt.strftime(dt.now(),'%d-%m-%Y')]*len(codes)))
-
-
-def combine(prices):
-	final = []
-	with open(BVL_FILE, mode='r') as file:
-		content = [i for i in csv.reader(file, delimiter=",")]
-	# update all current codes with new information (if it exists) or copy current one
-	for code in content[1:]:
-		appending = [i for i in prices if i[0] == code[0]]
-		if not appending:
-			to_append = code[:]
-		else:
-			to_append = appending[0]
-		final.append(to_append)
-	# add new codes from new information not in current codes
-	for code in prices:
-		if code not in final:
-			final.append(code)
-	# rewrite file
-	with open(BVL_FILE, mode='w', newline="") as file:
-		w = csv.writer(file, delimiter=",")
-		for line in sorted(final, key=lambda i:i[0]):
-			w.writerow(line)
-
-
-def select_data(data, selected):
-	result = []
-	for field in selected:
-		if field in data.keys():
-			result.append(data[field])
-		else:
-			result.append(' ')
-	return result
-
-
-def write_file(headers, data):
-    workbook = Workbook()
-    sheet = workbook.active
-
-    for i, header in enumerate(headers, start=1):
-        sheet['A'+str(i)] = header
-
-    for r, row_data in enumerate(data, start=66):
-        for c, col_data in enumerate(row_data, start=1):
-            coords = chr(r) + str(c)
-            sheet[coords] = col_data
-
-    workbook.save(filename=YF_FILE)
-
+def write_xlsx(headers, data, title, filename):
+	workbook = Workbook()
+	sheet = workbook.active
+	sheet.title = title
+	# Insert header row
+	sheet.append(headers)
+	# Insert data by rows
+	for row in data:
+		sheet.append(row)
+	workbook.save(filename=filename)
 
 def send_gmail(to_list, subject, body, attach):
 	for to in to_list:
 		ezgmail.send(to, subject, body, attach)
 
 
-
-# Common definitions
+# Set-Up
 os.chdir(get_system())
-send_to_list = ['gfreundt@losportales.com.pe', 'jlcastanedaherrera@gmail.com']
+send_to_list = ['gfreundt@losportales.com.pe'] #, 'jlcastanedaherrera@gmail.com']
+files_to_send = []
+text_to_send = ''
 
 # Yahoo Finance
-YF_FILE = 'yf_tickers.xlsx'
-tickers = ['G', 'AAPL', 'T', 'KO']
-fields_to_extract = ['symbol', 'ebitdaMargins', 'profitMargins', 'grossMargins', 'revenueGrowth', 'operatingMargins', 'ebitda', 'targetLowPrice',
-                     'returnOnAssets', 'numberOfAnalystOpinions', 'targetMeanPrice', 'returnOnEquity', 'targetHighPrice',
-                     'quickRatio', 'recommendationMean', 'trailingAnnualDividendYield', 'payoutRatio', 'trailingAnnualDividendRate',
-                     'expireDate', 'yield', 'algorithm', 'dividendRate', 'exDividendDate', 'currency', 'trailingPE',
-                     'priceToSalesTrailing12Months', 'forwardPE', 'maxAge', 'fromCurrency', 'fiveYearAvgDividendYield']
-compose = []
-for ticker in tickers:
-    t = yf.Ticker(ticker)
-    # get stock info
-    compose.append(select_data(t.info, fields_to_extract))
-write_file(headers=fields_to_extract, data=compose)
-
+if 'YF' in sys.argv:
+	y = YahooFinance()
+	y.main()
+	files_to_send.append(y.FILE_NAME)
+	text_to_send += ('- ' + y.DESCRIPTION)
 
 # Bolsa de Valores de Lima
-BVL_FILE = 'bvl_data.csv'
-raw = httrack('https://www.bvl.com.pe/mercado/movimientos-diarios')
-codes = codes(raw)
-prices = prices(raw, codes)
-final = combine(prices)
+if 'BVL' in sys.argv:
+	b = Bvl()
+	b.main()
+	files_to_send.append(b.FILE_NAME)
+	text_to_send += ('- ' + b.DESCRIPTION)
+
 
 # Cerrar mandando mail con attachments
-send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:\n1. Cierre BVL del día\n2. Yahoo Finance Ticker Data', attach=[BVL_FILE, YF_FILE])
+print(send_to_list, files_to_send, text_to_send)
+send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:\n' + text_to_send, attach=files_to_send)
