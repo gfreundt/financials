@@ -1,10 +1,11 @@
 import ezgmail
 from datetime import datetime as dt
-import csv, os, sys
+import csv, os, sys, time
 import subprocess
 import platform
 import yfinance as yf
 from openpyxl import Workbook
+import threading
 from tqdm import tqdm
 
 
@@ -14,6 +15,8 @@ def get_system():
 		return '/home/pi/pythonCode/financials'
 	else:
 		return '/home/gabriel/pythonCode/financials'
+
+
 
 
 class YahooFinance:
@@ -32,12 +35,19 @@ class YahooFinance:
 		return tickers, fields
 
 	def main(self):
-		compose = []
+		self.compose = []
+		all_threads = []
 		for ticker in tqdm(self.TICKERS):
-			t = yf.Ticker(ticker)
-    		# get stock info
-			compose.append(self.select_data(t.info, self.FIELDS))
-		write_xlsx(headers=self.FIELDS, data=compose, title=self.TITLE, filename=self.FILE_NAME)
+			new_thread = threading.Thread(target=self.yf_api, args=[ticker])
+			new_thread.start()
+			all_threads.append(new_thread)
+		_ = [i.join() for i in all_threads]
+		write_xlsx(headers=self.FIELDS, data=self.compose, title=self.TITLE, filename=self.FILE_NAME)
+
+	def yf_api(self, ticker):
+		t = yf.Ticker(ticker)
+		self.compose.append(self.select_data(t.info, self.FIELDS))
+
 
 	def select_data(self, data, selected):
 		result = []
