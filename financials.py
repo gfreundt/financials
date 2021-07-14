@@ -6,7 +6,6 @@ import subprocess
 import platform
 import yfinance as yf
 from openpyxl import Workbook
-from tqdm import tqdm
 
 
 def get_system():
@@ -34,7 +33,7 @@ class YahooFinance:
 
 	def main(self):
 		compose = []
-		for ticker in tqdm(self.TICKERS, desc='Downloading YahooFinance Tickers'):
+		for ticker in self.TICKERS:
 			t = yf.Ticker(ticker)
     		# get stock info
 			compose.append(self.select_data(t.info, self.FIELDS))
@@ -165,5 +164,4 @@ if 'BVL' in sys.argv:
 
 
 # Cerrar mandando mail con attachments
-print(send_to_list, files_to_send, text_to_send)
 send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:\n' + text_to_send, attach=files_to_send)
