@@ -1,4 +1,4 @@
-#import ezgmail
+import ezgmail
 from datetime import datetime as dt
 import csv, os, sys
 import subprocess
@@ -45,7 +45,6 @@ class YahooFinance:
 				result.append(data[field])
 			else:
 				result.append(' ')
-				pass
 		return result
 
 
@@ -164,4 +163,4 @@ if 'BVL' in sys.argv:
 
 
 # Cerrar mandando mail con attachments
-#send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:' + text_to_send, attach=files_to_send)
+send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:' + text_to_send, attach=files_to_send)
