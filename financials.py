@@ -25,7 +25,7 @@ class YahooFinance:
 		self.DESCRIPTION = 'Yahoo Finance General Information for Specific Tickers and Fields'
 		
 	def load_parameters(self):
-		with open('yf_t.txt', mode='r') as file:
+		with open('yf_tickers.txt', mode='r') as file:
 			tickers = [i.strip() for i in file.readlines()]
 		with open('yf_fields.txt', mode='r') as file:
 			fields = [i.strip() for i in file.readlines()]
@@ -66,7 +66,7 @@ class Bvl:
 
 	def httrack(self, url):
 		os.chdir('webdata')
-		subprocess.run('httrack --update --skeleton --display ' + url, shell=True)
+		subprocess.run('httrack -- quiet --update --skeleton --display ' + url, shell=True)
 		os.chdir('..')
 		with open(os.path.join('webdata', 'www.bvl.com.pe', 'mercado', 'agentes', 'listado.html'), mode='r') as file:
 			return file.read()
