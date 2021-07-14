@@ -26,6 +26,8 @@ class YahooFinance:
 		self.TICKERS, self.FIELDS = self.load_parameters()
 		self.TITLE = 'YF Tickers'
 		self.DESCRIPTION = 'Yahoo Finance General Information for Specific Tickers and Fields'
+		self.MAX_THREADS = 250
+		self.total = 0
 		
 	def load_parameters(self):
 		with open('yf_tickers.txt', mode='r') as file:
@@ -37,16 +39,19 @@ class YahooFinance:
 	def main(self):
 		self.compose = []
 		all_threads = []
-		for ticker in tqdm(self.TICKERS):
+		for k, ticker in enumerate(tqdm(self.TICKERS), start=1):
 			new_thread = threading.Thread(target=self.yf_api, args=[ticker])
 			new_thread.start()
 			all_threads.append(new_thread)
+			while threading.active_count() >= self.MAX_THREADS:
+				time.sleep(1)
 		_ = [i.join() for i in all_threads]
 		write_xlsx(headers=self.FIELDS, data=self.compose, title=self.TITLE, filename=self.FILE_NAME)
 
 	def yf_api(self, ticker):
 		t = yf.Ticker(ticker)
 		self.compose.append(self.select_data(t.info, self.FIELDS))
+		self.total += 1
 
 
 	def select_data(self, data, selected):
@@ -174,4 +179,5 @@ if 'BVL' in sys.argv:
 
 
 # Cerrar mandando mail con attachments
-send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:' + text_to_send, attach=files_to_send)
+if not 'NOEMAIL' in sys.argv:
+	send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:' + text_to_send, attach=files_to_send)
