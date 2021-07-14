@@ -153,15 +153,15 @@ if 'YF' in sys.argv:
 	y = YahooFinance()
 	y.main()
 	files_to_send.append(y.FILE_NAME)
-	text_to_send += ('- ' + y.DESCRIPTION)
+	text_to_send += ('\n- ' + y.DESCRIPTION)
 
 # Bolsa de Valores de Lima
 if 'BVL' in sys.argv:
 	b = Bvl()
 	b.main()
 	files_to_send.append(b.FILE_NAME)
-	text_to_send += ('- ' + b.DESCRIPTION)
+	text_to_send += ('\n- ' + b.DESCRIPTION)
 
 
 # Cerrar mandando mail con attachments
-send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:\n' + text_to_send, attach=files_to_send)
+send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:' + text_to_send, attach=files_to_send)
