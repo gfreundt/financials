@@ -45,6 +45,7 @@ class YahooFinance:
 				result.append(data[field])
 			else:
 				result.append(' ')
+				pass
 		return result
 
 
