@@ -1,5 +1,4 @@
-from email.mime import text
-import ezgmail
+#import ezgmail
 from datetime import datetime as dt
 import csv, os, sys
 import subprocess
@@ -66,7 +65,7 @@ class Bvl:
 
 	def httrack(self, url):
 		os.chdir('webdata')
-		subprocess.run('httrack -- quiet --update --skeleton --display ' + url, shell=True)
+		subprocess.run('httrack --quiet --update --skeleton --display ' + url, shell=True)
 		os.chdir('..')
 		with open(os.path.join('webdata', 'www.bvl.com.pe', 'mercado', 'agentes', 'listado.html'), mode='r') as file:
 			return file.read()
@@ -164,4 +163,4 @@ if 'BVL' in sys.argv:
 
 
 # Cerrar mandando mail con attachments
-send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:' + text_to_send, attach=files_to_send)
+#send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:' + text_to_send, attach=files_to_send)
