@@ -5,6 +5,7 @@ import subprocess
 import platform
 import yfinance as yf
 from openpyxl import Workbook
+from tqdm import tqdm
 
 
 def get_system():
@@ -32,7 +33,7 @@ class YahooFinance:
 
 	def main(self):
 		compose = []
-		for ticker in self.TICKERS:
+		for ticker in tqdm(self.TICKERS):
 			t = yf.Ticker(ticker)
     		# get stock info
 			compose.append(self.select_data(t.info, self.FIELDS))
@@ -143,7 +144,7 @@ def send_gmail(to_list, subject, body, attach):
 
 # Set-Up
 os.chdir(get_system())
-send_to_list = ['gfreundt@losportales.com.pe'] #, 'jlcastanedaherrera@gmail.com']
+send_to_list = ['gfreundt@losportales.com.pe', 'jlcastanedaherrera@gmail.com']
 files_to_send = []
 text_to_send = ''
 
