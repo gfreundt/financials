@@ -27,3 +27,4 @@ forwardPE
 maxAge
 fromCurrency
 fiveYearAvgDividendYield]
+pegRatio
