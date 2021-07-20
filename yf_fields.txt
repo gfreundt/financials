@@ -27,4 +27,5 @@ priceToSalesTrailing12Months
 forwardPE 
 maxAge
 fromCurrency
-fiveYearAvgDividendYield]
+fiveYearAvgDividendYield
+pegRatio
