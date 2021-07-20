@@ -1,4 +1,4 @@
-import ezgmail
+#import ezgmail
 from datetime import datetime as dt
 import csv, os, sys, time
 import subprocess
@@ -22,36 +22,45 @@ def get_system():
 class YahooFinance:
 
 	def __init__(self):
+		self.TIMER = dt.now()
 		self.FILE_NAME = 'yf_tickers.xlsx'
+		self.CHUNK_SIZE = 50
 		self.TICKERS, self.FIELDS = self.load_parameters()
 		self.TITLE = 'YF Tickers'
 		self.DESCRIPTION = 'Yahoo Finance General Information for Specific Tickers and Fields'
-		self.MAX_THREADS = 250
 		self.total = 0
 		
 	def load_parameters(self):
-		with open('yf_tickers.txt', mode='r') as file:
+		with open('yf_tickers.txt', mode='r') as file: #TEST FILE: yf_t.txt
 			tickers = [i.strip() for i in file.readlines()]
+			# Break into chunks for threading
+			tickers = [tickers[i:i + self.CHUNK_SIZE] for i in range(0, len(tickers), self.CHUNK_SIZE)]
 		with open('yf_fields.txt', mode='r') as file:
 			fields = [i.strip() for i in file.readlines()]
 		return tickers, fields
 
+	def xmain(self):
+		self.compose = []
+		for ticker in tqdm(self.TICKERS):
+			self.yf_api(ticker)
+
 	def main(self):
 		self.compose = []
 		all_threads = []
-		for k, ticker in enumerate(tqdm(self.TICKERS), start=1):
-			new_thread = threading.Thread(target=self.yf_api, args=[ticker])
-			new_thread.start()
-			all_threads.append(new_thread)
-			while threading.active_count() >= self.MAX_THREADS:
-				time.sleep(1)
-		_ = [i.join() for i in all_threads]
+		for ticker_chunk in tqdm(self.TICKERS):
+			for ticker in ticker_chunk:
+				new_thread = threading.Thread(target=self.yf_api, args=[ticker])
+				new_thread.start()
+				all_threads.append(new_thread)
+			# Join all threads and wait until they are done before moving on with next chunk
+			_ = [i.join() for i in all_threads]
+
 		write_xlsx(headers=self.FIELDS, data=self.compose, title=self.TITLE, filename=self.FILE_NAME)
+		
 
 	def yf_api(self, ticker):
 		t = yf.Ticker(ticker)
 		self.compose.append(self.select_data(t.info, self.FIELDS))
-		self.total += 1
 
 
 	def select_data(self, data, selected):
@@ -153,6 +162,7 @@ def write_xlsx(headers, data, title, filename):
 	workbook.save(filename=filename)
 
 def send_gmail(to_list, subject, body, attach):
+	import ezgmail # Import close to sending to avoid 'Broken Pipe' error
 	for to in to_list:
 		ezgmail.send(to, subject, body, attach)
 
