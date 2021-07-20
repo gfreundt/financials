@@ -1,6 +1,5 @@
-#import ezgmail
 from datetime import datetime as dt
-import csv, os, sys, time
+import csv, os, sys
 import subprocess
 import platform
 import yfinance as yf
@@ -9,26 +8,14 @@ import threading
 from tqdm import tqdm
 
 
-def get_system():
-	node = platform.node()
-	if 'raspberrypi' in node:
-		return '/home/pi/pythonCode/financials'
-	else:
-		return '/home/gabriel/pythonCode/financials'
-
-
-
-
 class YahooFinance:
 
 	def __init__(self):
-		self.TIMER = dt.now()
 		self.FILE_NAME = 'yf_tickers.xlsx'
 		self.CHUNK_SIZE = 50
 		self.TICKERS, self.FIELDS = self.load_parameters()
 		self.TITLE = 'YF Tickers'
 		self.DESCRIPTION = 'Yahoo Finance General Information for Specific Tickers and Fields'
-		self.total = 0
 		
 	def load_parameters(self):
 		with open('yf_tickers.txt', mode='r') as file: #TEST FILE: yf_t.txt
@@ -38,11 +25,6 @@ class YahooFinance:
 		with open('yf_fields.txt', mode='r') as file:
 			fields = [i.strip() for i in file.readlines()]
 		return tickers, fields
-
-	def xmain(self):
-		self.compose = []
-		for ticker in tqdm(self.TICKERS):
-			self.yf_api(ticker)
 
 	def main(self):
 		self.compose = []
@@ -54,14 +36,11 @@ class YahooFinance:
 				all_threads.append(new_thread)
 			# Join all threads and wait until they are done before moving on with next chunk
 			_ = [i.join() for i in all_threads]
-
 		write_xlsx(headers=self.FIELDS, data=self.compose, title=self.TITLE, filename=self.FILE_NAME)
 		
-
 	def yf_api(self, ticker):
 		t = yf.Ticker(ticker)
 		self.compose.append(self.select_data(t.info, self.FIELDS))
-
 
 	def select_data(self, data, selected):
 		result = []
@@ -106,7 +85,7 @@ class Bvl:
 
 	def get_codes(self, raw):
 		idx = 0
-		extract=[]
+		extract = []
 		while True:
 			nidx = raw.find('<dl><dt>', idx) + 8
 			if nidx == 7:
@@ -150,6 +129,13 @@ class Bvl:
 		return final
 
 
+def get_system():
+	node = platform.node()
+	if 'raspberrypi' in node:
+		return '/home/pi/pythonCode/financials'
+	else:
+		return '/home/gabriel/pythonCode/financials'
+
 def write_xlsx(headers, data, title, filename):
 	workbook = Workbook()
 	sheet = workbook.active
@@ -187,7 +173,6 @@ if 'BVL' in sys.argv:
 	files_to_send.append(b.FILE_NAME)
 	text_to_send += ('\n- ' + b.DESCRIPTION)
 
-
-# Cerrar mandando mail con attachments
+# Close with sending mail with attachments
 if not 'NOEMAIL' in sys.argv:
 	send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:' + text_to_send, attach=files_to_send)
