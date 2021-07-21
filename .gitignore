@@ -1,0 +1,6 @@
+webdata/
+virtualenv/
+*.csv
+*.xlsx
+*.json
+yf_t.txt
