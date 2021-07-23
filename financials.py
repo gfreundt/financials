@@ -41,6 +41,7 @@ class YahooFinance:
 	def yf_api(self, ticker):
 		t = yf.Ticker(ticker)
 		self.compose.append(self.select_data(t.info, self.FIELDS))
+		self.recommends.append()
 
 	def select_data(self, data, selected):
 		result = []
