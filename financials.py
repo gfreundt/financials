@@ -30,7 +30,7 @@ class YahooFinance:
 		self.compose = []
 		all_threads = []
 		for ticker_chunk in tqdm(self.TICKERS):
-			for ticker in tqdm(ticker_chunk):
+			for ticker in ticker_chunk:
 				new_thread = threading.Thread(target=self.yf_api, args=[ticker])
 				new_thread.start()
 				all_threads.append(new_thread)
