@@ -3,5 +3,4 @@ webdata/
 virtualenv/
 *.csv
 *.xlsx
-*.json
-yf_t.txt
+yf_test.txt

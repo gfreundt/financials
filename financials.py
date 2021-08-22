@@ -1,11 +1,11 @@
 from datetime import datetime as dt
 import csv, os, sys
 import subprocess
-import platform
 import yfinance as yf
 from openpyxl import Workbook
 import threading
 from tqdm import tqdm
+import yagmail
 
 
 class YahooFinance:
@@ -18,7 +18,7 @@ class YahooFinance:
 		self.DESCRIPTION = 'Yahoo Finance General Information for Specific Tickers and Fields'
 		
 	def load_parameters(self):
-		with open('yf_tickers.txt', mode='r') as file: #TEST FILE: yf_t.txt
+		with open('yf_tickers.txt', mode='r') as file: #TEST FILE: yf_test.txt
 			tickers = [i.strip() for i in file.readlines()]
 			# Break into chunks for threading
 			tickers = [tickers[i:i + self.CHUNK_SIZE] for i in range(0, len(tickers), self.CHUNK_SIZE)]
@@ -30,7 +30,7 @@ class YahooFinance:
 		self.compose = []
 		all_threads = []
 		for ticker_chunk in tqdm(self.TICKERS):
-			for ticker in ticker_chunk:
+			for ticker in tqdm(ticker_chunk):
 				new_thread = threading.Thread(target=self.yf_api, args=[ticker])
 				new_thread.start()
 				all_threads.append(new_thread)
@@ -69,9 +69,9 @@ class Bvl:
 
 	def httrack(self, url):
 		os.chdir('webdata')
-		subprocess.run('httrack --quiet --update --skeleton --display ' + url, shell=True)
+		subprocess.run('WinHTTrack\httrack --quiet --update --skeleton --display ' + url, shell=True)
 		os.chdir('..')
-		with open(os.path.join('webdata', 'www.bvl.com.pe', 'mercado', 'agentes', 'listado.html'), mode='r') as file:
+		with open(os.path.join('webdata', 'www.bvl.com.pe', 'mercado', 'agentes', 'listado.html'), mode='r', encoding='utf-8') as file:
 			return file.read()
 
 	def get_prices(self, raw):
@@ -122,19 +122,17 @@ class Bvl:
 			if code not in final:
 				final.append(code)
 		# rewrite latest file (for next time)
-		with open('bvl_latest_temp.csv', mode='w', encoding='utf-8') as file:
+		with open('bvl_latest_temp.csv', mode='w', encoding='utf-8', newline='') as file:
 			w = csv.writer(file, delimiter=",")
 			for line in sorted(final, key=lambda i:i[0]):
 				w.writerow(line)
 		return final
 
-
-def get_system():
-	node = platform.node()
-	if 'raspberrypi' in node:
-		return '/home/pi/pythonCode/financials'
+def prod_or_dev():
+	if 'NOTEST' in sys.argv:
+		return os.path.join('\prodCode','financials')
 	else:
-		return '/home/gabriel/pythonCode/financials'
+		return os.path.join('\pythonCode','financials')
 
 def write_xlsx(headers, data, title, filename):
 	workbook = Workbook()
@@ -147,14 +145,15 @@ def write_xlsx(headers, data, title, filename):
 		sheet.append(row)
 	workbook.save(filename=filename)
 
-def send_gmail(to_list, subject, body, attach):
-	import ezgmail # Import close to sending to avoid 'Broken Pipe' error
+def send_gmail(sender, to_list, subject, body, attach):
+	yag = yagmail.SMTP(sender)
 	for to in to_list:
-		ezgmail.send(to, subject, body, attach)
+		yag.send(to = to, subject = subject, contents = body, attachments = attach)
 
 
 # Set-Up
-os.chdir(get_system())
+os.chdir(prod_or_dev())
+sender = 'gfreundt@gmail.com'
 send_to_list = ['gfreundt@losportales.com.pe', 'jlcastanedaherrera@gmail.com']
 files_to_send = []
 text_to_send = ''
@@ -175,4 +174,4 @@ if 'BVL' in sys.argv:
 
 # Close with sending mail with attachments
 if not 'NOEMAIL' in sys.argv:
-	send_gmail(send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:' + text_to_send, attach=files_to_send)
+	send_gmail(sender, send_to_list, subject='Información Financiera del ' + dt.strftime(dt.now(), '%Y.%m.%d'), body='Contenido:' + text_to_send, attach=files_to_send)
